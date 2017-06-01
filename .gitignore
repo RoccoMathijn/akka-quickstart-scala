@@ -1,0 +1,12 @@
+.floo
+.ensime*
+*.iml
+.flooignore
+*.db
+*.ipr
+*.iws
+.idea/
+target
+*.log
+.DS_Store
+dist
