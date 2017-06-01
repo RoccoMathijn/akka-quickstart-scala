@@ -33,13 +33,13 @@ class CsvTest extends TestKit(ActorSystem("CsvTest")) with FlatSpecLike
             .fromPath(inputFile.toJava.toPath)
             .via(CsvParsing.lineScanner())
             .via(CsvToMap.toMap())
-            .map(row => "r")
+            .map(_ => "r")
             .map(ByteString.fromString)
             .toMat(FileIO.toPath(output.toJava.toPath))(Keep.right)
             .run()
             .futureValue
 
-          println(output.contentAsString)
+          println(output.contentAsString) // displays 'rrr' most of the time, occasionally 'rr'
           output.contentAsString should be("rr") // one 'r' is missing
         }
       }
