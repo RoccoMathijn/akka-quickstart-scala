@@ -49,7 +49,7 @@ class CsvTest
 
   it should "read all lines with different number of columns on last row without final line end and last column empty" in {
     val data =
-      """r1c1,r1c3,
+      """r1c1,r1c2,
         |r2c1,""".stripMargin
 
     val result = Source(data.map(ByteString(_)))
