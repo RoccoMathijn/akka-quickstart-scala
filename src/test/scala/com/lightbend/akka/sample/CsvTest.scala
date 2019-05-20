@@ -2,49 +2,49 @@ package com.lightbend.akka.sample
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
-import akka.stream.scaladsl.{FileIO, Keep}
+import akka.stream.alpakka.csv.scaladsl.CsvParsing
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import better.files.File
-import unindent._
 import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
-class CsvTest extends TestKit(ActorSystem("CsvTest")) with FlatSpecLike
-  with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures with IntegrationPatience {
+class CsvTest
+    extends TestKit(ActorSystem("CsvTest"))
+    with FlatSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with Eventually
+    with ScalaFutures
+    with IntegrationPatience {
 
   implicit val mat = ActorMaterializer()
 
-  it should "fail to read all lines" in {
-    val data: String =
-      i"""
-    Date,    Value, Param 1
-    2017-01-01,  1,       0
-    2017-01-02,  2,      10
-    2017-01-03,  3,      10""".replace(" ", "")
+  it should "read all lines with different number of columns on last row" in {
+    val data =
+      """r1c1,r1c2,
+        |r2c1,
+        |""".stripMargin
 
-    File.usingTemporaryFile() { inputFile =>
-      inputFile.write(data)
+    val result = Source(data.map(ByteString(_)))
+      .via(CsvParsing.lineScanner())
+      .runWith(Sink.seq)
+      .futureValue
 
-      eventually {
-        File.usingTemporaryFile() { output =>
-          FileIO
-            .fromPath(inputFile.toJava.toPath)
-            .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMap())
-            .map(_ => "r")
-            .map(ByteString.fromString)
-            .toMat(FileIO.toPath(output.toJava.toPath))(Keep.right)
-            .run()
-            .futureValue
+    result should have size 2
+  }
 
-          println(output.contentAsString) // displays 'rrr' most of the time, occasionally 'rr'
-          output.contentAsString should be("rr") // one 'r' is missing
-        }
-      }
-    }
+  it should "read all lines with different number of columns on last row without final line feed" in {
+    val data =
+      """r1c1,r1c2,
+        |r2c1,""".stripMargin
 
+    val result = Source(data.map(ByteString(_)))
+      .via(CsvParsing.lineScanner())
+      .runWith(Sink.seq)
+      .futureValue
+
+    result should have size 2
   }
 
   override protected def afterAll(): Unit = {
